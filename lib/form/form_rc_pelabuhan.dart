@@ -20,14 +20,14 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
   final TextEditingController _containerController = TextEditingController();
   final TextEditingController _sealController = TextEditingController();
   final TextEditingController _seal2Controller = TextEditingController();
-  final String _ordersUrl =
-      'http://192.168.20.65/ralisa_api/index.php/api/get_new_salesorder_for_krani_pelabuhan';
   // final String _ordersUrl =
-  //     'https://api3.ralisa.co.id/index.php/api/get_new_salesorder_for_krani_pelabuhan';
-  final String _sealUrl =
-      'http://192.168.20.65/ralisa_api/index.php/api/get_seal_number';
+  //     'http://192.168.20.65/ralisa_api/index.php/api/get_new_salesorder_for_krani_pelabuhan';
+  final String _ordersUrl =
+      'https://api3.ralisa.co.id/index.php/api/get_new_salesorder_for_krani_pelabuhan';
   // final String _sealUrl =
-  //     'https://api3.ralisa.co.id/index.php/api/get_seal_number';
+  //     'http://192.168.20.65/ralisa_api/index.php/api/get_seal_number';
+  final String _sealUrl =
+      'https://api3.ralisa.co.id/index.php/api/get_seal_number';
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   String? _namaPetugas;
@@ -168,9 +168,9 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
 
     if (existing.isNotEmpty) {
       final data = jsonDecode(existing);
-      _containerController.text = data['driver_container_num'] ?? '';
-      _sealController.text = data['driver_seal_num1'] ?? '';
-      _seal2Controller.text = data['driver_seal_num2'] ?? '';
+      _containerController.text = data['container_num'] ?? '';
+      _sealController.text = data['seal_number'] ?? '';
+      _seal2Controller.text = data['seal_number2'] ?? '';
       String fotoPath = data['foto_rc'] ?? '';
       if (fotoPath.isNotEmpty) {
         _selectedImage = File(fotoPath);
@@ -180,9 +180,9 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
         _databaseData = data;
       });
     } else {
-      _containerController.text = widget.order['driver_container_num'] ?? '';
-      _sealController.text = widget.order['driver_seal_num1'] ?? '';
-      _seal2Controller.text = widget.order['driver_seal_num2'] ?? '';
+      _containerController.text = widget.order['container_num'] ?? '';
+      _sealController.text = widget.order['seal_number'] ?? '';
+      _seal2Controller.text = widget.order['seal_number2'] ?? '';
 
       setState(() {
         _databaseData = widget.order;
@@ -207,9 +207,9 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
         "nama_kapal": widget.order['nama_kapal'] ?? '',
         "nomor_voy": widget.order['nomor_voy'] ?? '',
         "nama_pelayaran": widget.order['nama_pelayaran'] ?? '',
-        "driver_container_num": _containerController.text.trim(),
-        "driver_seal_num1": _sealController.text.trim(),
-        "driver_seal_num2": _seal2Controller.text.trim(),
+        "container_num": _containerController.text.trim(),
+        "seal_number": _sealController.text.trim(),
+        "seal_number2": _seal2Controller.text.trim(),
         "foto_rc": _selectedImage?.path ?? "",
         "username": _namaPetugas ?? "Tidak diketahui",
       };

@@ -5,7 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http_parser/http_parser.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+// import 'package:device_info_plus/device_info_plus.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -31,30 +31,30 @@ void pelabuhanOnStart(ServiceInstance service) async {
 }
 
 class PelabuhanService {
-  final String _loginUrl =
-      'http://192.168.20.65/ralisa_api/index.php/api/login';
-  // final String _loginUrl = 'https://api3.ralisa.co.id/index.php/api/login';
-  final String _ordersUrl =
-      'http://192.168.20.65/ralisa_api/index.php/api/get_new_salesorder_for_krani_pelabuhan';
+  // final String _loginUrl =
+  //     'http://192.168.20.65/ralisa_api/index.php/api/login';
+  final String _loginUrl = 'https://api3.ralisa.co.id/index.php/api/login';
   // final String _ordersUrl =
-  //     'https://api3.ralisa.co.id/index.php/api/get_new_salesorder_for_krani_pelabuhan';
-  final String _submitRcUrl =
-      'http://192.168.20.65/ralisa_api/index.php/api/agent_create_rc';
+  //     'http://192.168.20.65/ralisa_api/index.php/api/get_new_salesorder_for_krani_pelabuhan';
+  final String _ordersUrl =
+      'https://api3.ralisa.co.id/index.php/api/get_new_salesorder_for_krani_pelabuhan';
   // final String _submitRcUrl =
-  // 'https://api3.ralisa.co.id/index.php/api/agent_create_rc';
+  //     'http://192.168.20.65/ralisa_api/index.php/api/agent_create_rc';
+  final String _submitRcUrl =
+      'https://api3.ralisa.co.id/index.php/api/agent_create_rc';
 
-  Future<String> _getDeviceImei() async {
-    final deviceInfo = DeviceInfoPlugin();
-    final androidInfo = await deviceInfo.androidInfo;
-    return androidInfo.id;
-  }
+  // Future<String> _getDeviceImei() async {
+  //   final deviceInfo = DeviceInfoPlugin();
+  //   final androidInfo = await deviceInfo.androidInfo;
+  //   return androidInfo.id;
+  // }
 
   Future<Map<String, dynamic>?> login({
     required String username,
     required String password,
   }) async {
-    // final imei = 'ac9ba078-0a12-45ad-925b-2d761ad9770f';
-    final imei = await _getDeviceImei();
+    final imei = 'ac9ba078-0a12-45ad-925b-2d761ad9770f';
+    // final imei = await _getDeviceImei();
     final _loginConfigs = [
       {
         'role': '3', // Pelabuhan
