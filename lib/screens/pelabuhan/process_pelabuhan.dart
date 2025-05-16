@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../form/form_rc_pelabuhan.dart';
+import 'package:intl/intl.dart';
 
 class ProcessPelabuhan extends StatefulWidget {
   final List<dynamic> orders;
@@ -57,6 +58,29 @@ class _ProcessPelabuhanState extends State<ProcessPelabuhan> {
               final order = _orders[index];
               final roNumber = order['no_ro'] ?? '-';
 
+              final nopol = order['truck_name'] ?? '-';
+              final driverName = order['driver_name'] ?? '-';
+              final rawDate = order['keluar_pabrik_tgl'];
+              final rawTime = order['keluar_pabrik_jam'];
+
+              String formattedDate = '-';
+              String formattedTime = '-';
+
+              if (rawDate != null) {
+                final parsedDate = DateTime.tryParse(rawDate);
+                if (parsedDate != null) {
+                  formattedDate = DateFormat('dd/MM/yyyy').format(parsedDate);
+                }
+              }
+
+              if (rawTime != null) {
+                try {
+                  final parsedTime = DateFormat('HH:mm:ss').parse(rawTime);
+                  formattedTime =
+                      '${DateFormat('HH:mm').format(parsedTime)} WIB';
+                } catch (_) {}
+              }
+
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 elevation: 2,
@@ -73,8 +97,65 @@ class _ProcessPelabuhanState extends State<ProcessPelabuhan> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.local_shipping,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Nopol: $nopol',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.person,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Supir: $driverName',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Tanggal Keluar Pabrik: $formattedDate',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Jam Keluar Pabrik: $formattedTime',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       Text(
-                        'Mohon Segera Lengkapi Data RC!',
+                        'RC Perlu di Proses!',
                         style: theme.textTheme.bodyMedium!.copyWith(
                           color: theme.colorScheme.primary,
                         ),

@@ -58,6 +58,8 @@ class _InboxPelabuhanState extends State<InboxPelabuhan> {
               final order = _orders[index];
               final roNumber = order['no_ro'] ?? '-';
 
+              final nopol = order['truck_name'] ?? '-';
+              final driverName = order['driver_name'] ?? '-';
               final rawDate = order['keluar_pabrik_tgl'];
               final rawTime = order['keluar_pabrik_jam'];
 
@@ -95,6 +97,34 @@ class _InboxPelabuhanState extends State<InboxPelabuhan> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.local_shipping,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Nopol: $nopol',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.person,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Supir: $driverName',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                       Row(
                         children: [
                           const Icon(

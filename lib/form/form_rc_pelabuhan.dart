@@ -212,6 +212,8 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
         "seal_number2": _seal2Controller.text.trim(),
         "foto_rc": _selectedImage?.path ?? "",
         "username": _namaPetugas ?? "Tidak diketahui",
+        "keluar_pabrik_tgl": widget.order['keluar_pabrik_tgl'] ?? '',
+        "keluar_pabrik_jam": widget.order['keluar_pabrik_jam'] ?? '',
       };
 
       final updatedDrafts =
