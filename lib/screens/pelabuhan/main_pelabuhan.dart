@@ -17,18 +17,21 @@ class MainPelabuhan extends StatefulWidget {
   _MainPelabuhanState createState() => _MainPelabuhanState();
 }
 
-class _MainPelabuhanState extends State<MainPelabuhan> {
+class _MainPelabuhanState extends State<MainPelabuhan>
+    with WidgetsBindingObserver {
   int _currentIndex = 0;
   List<dynamic> inboxOrders = [];
   List<dynamic> processOrders = [];
   List<dynamic> archiveOrders = [];
   bool _isLoading = true;
   Timer? _timer;
+  List<String> _notifiedOrderIds = [];
   late PelabuhanService _pelabuhanService;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pelabuhanService = PelabuhanService();
     _initializeNotifications();
     _isLoading = true;
@@ -49,7 +52,15 @@ class _MainPelabuhanState extends State<MainPelabuhan> {
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
 
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    // Tambahkan handler untuk notifikasi yang diklik
+    await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload?.startsWith('order_') ?? false) {
+          _fetchOrders(); // Refresh data saat notifikasi diklik
+        }
+      },
+    );
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'order_service_channel',
@@ -71,8 +82,16 @@ class _MainPelabuhanState extends State<MainPelabuhan> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetchOrders(); // Refresh data saat app aktif kembali
+    }
   }
 
   Future<void> _fetchOrders() async {
@@ -82,15 +101,7 @@ class _MainPelabuhanState extends State<MainPelabuhan> {
     try {
       final orders = await _pelabuhanService.fetchOrders();
 
-      final prefs = await SharedPreferences.getInstance();
-      // Ambil data order dari shared_preferences
-      final storedOrdersString = prefs.getString('orders');
-      final List<dynamic> storedOrders =
-          storedOrdersString != null
-              ? List<dynamic>.from(jsonDecode(storedOrdersString))
-              : [];
-
-      _checkForNewOrdersNotification(storedOrders, orders); // Panggil di sini
+      _checkForNewOrdersNotification(orders);
 
       orders.sort((a, b) {
         final tglA = a['keluar_pabrik_tgl'] ?? '';
@@ -103,6 +114,7 @@ class _MainPelabuhanState extends State<MainPelabuhan> {
         return dateTimeA.compareTo(dateTimeB);
       });
 
+      final prefs = await SharedPreferences.getInstance();
       final draftStringList = prefs.getStringList('rc_drafts') ?? [];
       final rawDraftOrders = draftStringList.map((e) => jsonDecode(e)).toList();
 
@@ -180,19 +192,12 @@ class _MainPelabuhanState extends State<MainPelabuhan> {
         });
 
         _isLoading = false;
-
-        // Bersihkan lastNotifiedSoIds jika order sudah di-archive
-        final archivedSoIds =
-            archiveOrders.map((order) => order['so_id'].toString()).toList();
-        final lastNotifiedSoIdsString = prefs.getString('lastNotifiedSoIds');
-        if (lastNotifiedSoIdsString != null) {
-          List<String> lastNotifiedSoIds = List<String>.from(
-            jsonDecode(lastNotifiedSoIdsString),
-          );
-          lastNotifiedSoIds.removeWhere((soId) => archivedSoIds.contains(soId));
-          prefs.setString('lastNotifiedSoIds', jsonEncode(lastNotifiedSoIds));
-        }
       });
+      // Bersihkan daftar notifikasi untuk order yang sudah memiliki foto RC
+      final completedOrderIds =
+          archiveOrders.map((o) => o['so_id'].toString()).toList();
+      _notifiedOrderIds.removeWhere((id) => completedOrderIds.contains(id));
+      await prefs.setStringList('notified_order_ids', _notifiedOrderIds);
     } catch (e) {
       print('Error fetching orders: $e');
       setState(() => _isLoading = false);
@@ -202,48 +207,32 @@ class _MainPelabuhanState extends State<MainPelabuhan> {
     }
   }
 
-  Future<void> _checkForNewOrdersNotification(
-    List<dynamic> storedOrders,
-    List<dynamic> currentOrders,
-  ) async {
-    if (currentOrders.isEmpty) return;
+  Future<void> _checkForNewOrdersNotification(List<dynamic> orders) async {
+    if (orders.isEmpty) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final lastNotifiedSoIdsString = prefs.getString('lastNotifiedSoIds');
-    List<String> lastNotifiedSoIds =
-        lastNotifiedSoIdsString != null
-            ? List<String>.from(jsonDecode(lastNotifiedSoIdsString))
-            : [];
+    final notifiedIds = prefs.getStringList('notified_order_ids') ?? [];
+    _notifiedOrderIds = notifiedIds;
 
-    final newOrders =
-        currentOrders.where((order) {
-          final soId = order['so_id'].toString();
+    final newOrdersToNotify =
+        orders.where((order) {
           final fotoRC = (order['foto_rc'] ?? '').toString().trim();
-
-          // Cari order yang sesuai di storedOrders
-          final storedOrder = storedOrders.firstWhere(
-            (stored) => stored['so_id'].toString() == soId,
-            orElse: () => null,
-          );
-
-          // Jika order ditemukan di storedOrders, gunakan foto_rc dari storedOrders
-          final checkFotoRC =
-              storedOrder != null
-                  ? (storedOrder['foto_rc'] ?? '').toString().trim()
-                  : fotoRC;
-
-          return checkFotoRC.isEmpty && !lastNotifiedSoIds.contains(soId);
+          final soId = order['so_id'].toString();
+          return fotoRC.isEmpty && !_notifiedOrderIds.contains(soId);
         }).toList();
 
-    if (newOrders.isNotEmpty) {
-      for (final newOrder in newOrders) {
-        await _pelabuhanService.showNewOrderNotification(
-          orderId: newOrder['so_id'].toString(),
-          noRo: newOrder['no_ro']?.toString() ?? 'No RO',
-        );
-        lastNotifiedSoIds.add(newOrder['so_id'].toString());
-      }
-      await prefs.setString('lastNotifiedSoIds', jsonEncode(lastNotifiedSoIds));
+    if (newOrdersToNotify.isEmpty) return;
+
+    for (final order in newOrdersToNotify) {
+      final orderId = order['so_id'].toString();
+      await _pelabuhanService.showNewOrderNotification(
+        orderId: orderId,
+        noRo: order['no_ro'] ?? 'No RO',
+      );
+
+      // Tambahkan ke daftar yang sudah dinotifikasi
+      _notifiedOrderIds.add(orderId);
+      await prefs.setStringList('notified_order_ids', _notifiedOrderIds);
     }
   }
 

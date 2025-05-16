@@ -41,7 +41,7 @@ class PelabuhanService {
   final String _submitRcUrl =
       'http://192.168.20.65/ralisa_api/index.php/api/agent_create_rc';
   // final String _submitRcUrl =
-  //     'https://api3.ralisa.co.id/index.php/api/agent_create_rc';
+  // 'https://api3.ralisa.co.id/index.php/api/agent_create_rc';
 
   Future<String> _getDeviceImei() async {
     final deviceInfo = DeviceInfoPlugin();
@@ -189,31 +189,6 @@ class PelabuhanService {
       ),
     );
     await service.startService();
-
-    const String groupKey = 'com.ralisa.group.RO_NOTIF';
-
-    const AndroidNotificationDetails summaryAndroidDetails =
-        AndroidNotificationDetails(
-          'order_service_channel',
-          'Order Service Channel',
-          channelDescription: 'Ralisa Background Service',
-          groupKey: groupKey,
-          setAsGroupSummary: true,
-          importance: Importance.low,
-          priority: Priority.low,
-          showWhen: false,
-        );
-
-    const NotificationDetails summaryPlatformDetails = NotificationDetails(
-      android: summaryAndroidDetails,
-    );
-
-    await flutterLocalNotificationsPlugin.show(
-      999999, // summary notif ID
-      'Ralisa App Service',
-      'Monitoring Progress...',
-      summaryPlatformDetails,
-    );
   }
 
   Future<List<dynamic>> fetchOrders() async {
@@ -318,8 +293,6 @@ class PelabuhanService {
     required String orderId,
     required String noRo,
   }) async {
-    const String groupKey = 'com.ralisa.group.RO_NOTIF'; // harus sama
-
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
           'order_service_channel',
@@ -330,11 +303,12 @@ class PelabuhanService {
           playSound: true,
           enableVibration: true,
           icon: '@mipmap/ic_launcher',
-          groupKey: groupKey,
-          setAsGroupSummary: false, // ⬅️ Penting: jangan jadi summary
-          groupAlertBehavior: GroupAlertBehavior.all,
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          ticker: 'Data RO Baru Masuk!',
+          fullScreenIntent: true,
           styleInformation: BigTextStyleInformation(
-            'Nomor RO: $noRo',
+            'Nomor RO: $noRo\nStatus: RC Perlu di Proses!',
             contentTitle: 'Data RO Baru Masuk!',
             htmlFormatContentTitle: true,
           ),
@@ -344,14 +318,12 @@ class PelabuhanService {
       android: androidDetails,
     );
 
-    final notificationId = int.tryParse(orderId) ?? orderId.hashCode;
-
     await flutterLocalNotificationsPlugin.show(
-      notificationId,
+      int.tryParse(orderId) ?? 0,
       'Data RO Baru Masuk!',
       'Nomor RO: $noRo',
       platformDetails,
-      payload: 'order_$orderId',
+      payload: 'order_$orderId', // Payload untuk trigger
     );
   }
 }

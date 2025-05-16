@@ -27,7 +27,7 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
   final String _sealUrl =
       'http://192.168.20.65/ralisa_api/index.php/api/get_seal_number';
   // final String _sealUrl =
-  // 'https://api3.ralisa.co.id/index.php/api/get_seal_number';
+  //     'https://api3.ralisa.co.id/index.php/api/get_seal_number';
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   String? _namaPetugas;
@@ -39,9 +39,8 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
   bool _isLoadingSuggestions = false;
   Timer? _sealSearchDebounce;
   int _activeSealField = 0; // 0 = none, 1 = seal1, 2 = seal2
-  static const double _maxSuggestionHeight = 200;
+  static const double _maxSuggestionHeight = 250;
   final FocusNode _sealFocusNode1 = FocusNode();
-  final FocusNode _sealFocusNode2 = FocusNode();
 
   @override
   void initState() {
@@ -50,12 +49,7 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
     _initializeData();
     _sealFocusNode1.addListener(() {
       if (!_sealFocusNode1.hasFocus) {
-        _validateSealInput(_sealController.text.trim(), 1);
-      }
-    });
-    _sealFocusNode2.addListener(() {
-      if (!_sealFocusNode2.hasFocus) {
-        _validateSealInput(_seal2Controller.text.trim(), 2);
+        _validateSealInput(_sealController.text.trim());
       }
     });
   }
@@ -287,7 +281,7 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
     });
   }
 
-  Future<void> _validateSealInput(String input, int fieldNumber) async {
+  Future<void> _validateSealInput(String input) async {
     if (input.isEmpty) return;
 
     final prefs = await SharedPreferences.getInstance();
@@ -308,16 +302,12 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
 
         if (!seals.contains(input)) {
           _showInvalidInputDialog(
-            'Nomor Segel ${fieldNumber == 1 ? "1" : "2"} tidak sesuai dengan data tersedia.',
+            'Nomor Segel 1 tidak sesuai dengan data tersedia.',
           );
 
           // Kosongkan input setelah pop-up
           setState(() {
-            if (fieldNumber == 1) {
-              _sealController.clear();
-            } else {
-              _seal2Controller.clear();
-            }
+            _sealController.clear();
           });
         }
       }
@@ -348,10 +338,16 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
     if (_isSubmitting) return;
 
     if (!_isAllFieldsFilled() || _selectedImage == null) {
+      String errorMessage = '';
+      if (_containerController.text.trim().isEmpty)
+        errorMessage = 'Nomor Kontainer';
+      else if (_sealController.text.trim().isEmpty)
+        errorMessage = 'Nomor Segel 1';
+      else if (_selectedImage == null)
+        errorMessage = 'Foto RC';
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Mohon lengkapi semua data terlebih dahulu'),
-        ),
+        SnackBar(content: Text('Mohon isi $errorMessage terlebih dahulu')),
       );
       return;
     }
@@ -359,26 +355,13 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      // ✅ Cek ulang seal 1 dan 2 via API
+      // Cek ulang seal 1 dan 2 via API
       bool seal1Valid = await _isSealValid(_sealController.text.trim());
-      bool seal2Valid = true;
-
-      if (_seal2Controller.text.trim().isNotEmpty) {
-        seal2Valid = await _isSealValid(_seal2Controller.text.trim());
-      }
 
       if (!seal1Valid) {
         if (mounted) {
           _showInvalidInputDialog('Nomor Segel 1 tidak valid saat submit.');
           setState(() => _sealController.clear());
-        }
-        return;
-      }
-
-      if (_seal2Controller.text.trim().isNotEmpty && !seal2Valid) {
-        if (mounted) {
-          _showInvalidInputDialog('Nomor Segel 2 tidak valid saat submit.');
-          setState(() => _seal2Controller.clear());
         }
         return;
       }
@@ -552,11 +535,11 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Color.fromARGB(255, 236, 212, 212),
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 4,
                         offset: const Offset(0, 2),
                       ),
@@ -569,7 +552,7 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
                       Text(
                         item['label']!,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 14,
                           color: Colors.black54,
                           fontWeight: FontWeight.w600,
                         ),
@@ -578,7 +561,7 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
                       Text(
                         item['value']!,
                         style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -753,7 +736,6 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               TextFormField(
-                                focusNode: _sealFocusNode2,
                                 controller: _seal2Controller,
                                 decoration: InputDecoration(
                                   labelText: 'Nomor Segel 2',
@@ -762,29 +744,9 @@ class _FormPelabuhanScreenState extends State<FormPelabuhanScreen> {
                                     horizontal: 16,
                                     vertical: 14,
                                   ),
-                                  suffixIcon:
-                                      (_isLoadingSuggestions &&
-                                              _activeSealField == 2)
-                                          ? Padding(
-                                            padding: EdgeInsets.all(8),
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                          : null,
                                 ),
-                                onTap:
-                                    () => setState(() => _activeSealField = 2),
-                                onChanged: (value) {
-                                  _autoSaveDraft();
-                                  _fetchSealSuggestions(value, 2);
-                                },
+                                onChanged: (_) => _autoSaveDraft(),
                               ),
-                              if (_sealSuggestions.isNotEmpty &&
-                                  _activeSealField == 2)
-                                _buildSuggestionDropdown(
-                                  controller: _seal2Controller,
-                                ),
                             ],
                           ),
                           const SizedBox(height: 20),
